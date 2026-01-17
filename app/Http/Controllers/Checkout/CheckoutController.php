@@ -1,0 +1,256 @@
+<?php
+
+namespace App\Http\Controllers\Checkout;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use App\Models\GuestUser;
+use App\Models\Currency;
+use App\Models\Reservation;
+use App\Models\UserReservation;
+use App\Models\UserTracking;
+use App\Models\Invoice;
+
+
+use Carbon\Carbon;
+
+use App\Models\Apartment;
+use App\Models\Voucher;
+use App\Mail\ReservationReceipt;
+use App\Models\SystemSetting;
+use App\Models\BookingDetail;
+use App\Models\Extra;
+use App\Models\ApartmentAttribute;
+use App\Models\Attribute;
+use App\Models\AttributeProperty;
+use Illuminate\Support\Facades\Mail;
+use PDF;
+
+
+class CheckoutController extends Controller
+{
+
+	public  $settings;
+
+	public function __construct()
+	{
+		$this->settings =  SystemSetting::first();
+	}
+
+
+	public function checkout(Request $request)
+	{
+
+		Log::info($request->all());
+		$rate = json_decode(session('rate'), true);
+		$rate = data_get($rate, 'rate', 1);
+
+
+		try {
+
+			$payload = $request->all();
+			$data = $request->all();
+			$input = $request->all();
+			$tracking_id = data_get($input, 'tracking_id');
+			$apartment = Apartment::find(data_get($input, 'apartment_id'));
+			$user_reservation = new UserReservation;
+			$guest = new GuestUser;
+			$guest->name = data_get($input, 'first_name');
+			$guest->last_name = data_get($input, 'last_name');
+			$guest->email = data_get($input, 'email');
+			$sessionId = data_get($input, 'sessionId');
+
+			if (!empty(data_get($input, 'code'))) {
+				$phone_number = '+' . data_get($input, 'code') . ' ' . data_get($input, 'phone_number');
+			} else {
+				$phone_number = data_get($input, 'phone_number');
+			}
+
+			$guest->phone_number = $phone_number;
+			$guest->save();
+			$bookings = BookingDetail::find(data_get($input, 'booking_ids'));
+
+			$user_reservation->user_id = optional($request->user())->id;
+			$user_reservation->guest_user_id = $guest->id;
+			$user_reservation->currency = data_get($input, 'currency') === 'NGN' ? '₦' : '$';
+			$user_reservation->invoice = "INV-" . date('Y') . "-" . rand(10000, time());
+			$user_reservation->payment_type = 'online';
+			$user_reservation->property_id = data_get($input, 'property_id');
+			$user_reservation->coupon = data_get($input, 'coupon');
+			$user_reservation->total = data_get($input, 'total');
+			$user_reservation->length_of_stay = data_get($input, 'length_of_stay');;
+			$user_reservation->original_amount = data_get($input, 'original_amount');
+			$user_reservation->coming_from = 'payment';
+			$user_reservation->ip = $request->ip();
+			$user_reservation->save();
+			$latest = Invoice::latest('id')->first();
+			$nextId = $latest ? $latest->id + 1 : 1;
+			$random = rand(1000, 9999);
+			$invoiceNumber = "INV-" . date('Y') . "-" . $nextId . $random;
+
+			$invoice = Invoice::create([
+				'invoice' => $invoiceNumber,
+				'full_name' => data_get($input, 'first_name'),
+				'email' => data_get($input, 'email') ?? null,
+				'phone' => $phone_number,
+				'address' => data_get($input, 'address')  ?? 'N/A',
+				'country' => data_get($input, 'country')  ?? 'N/A',
+				'currency' => data_get($input, 'currency') === 'NGN' ? '₦' : '$',
+				'subtotal' => data_get($input, 'total'),
+				'discount' =>  data_get($input, 'discount') ?? 0,
+				'discount_type' => data_get($input, 'discount_type') ?? 'fixed',
+				'caution_fee' => round(data_get($input, 'caution_fee') / 2, 0) ?? 0,
+				'total' => data_get($input, 'total'),
+				'payment_info' => data_get($input, 'payment_info') ?? null,
+				'description' => data_get($input, 'description') ?? null,
+				'rate' => $rate
+			]);
+
+			$user_reservation->showCheckLink = true;
+			$e_services = [];
+			$services = data_get($input, 'services', []);
+			$aq = [];
+			$property_extras = data_get($input, 'property_services', []);
+
+			if (!empty($services)) {
+				foreach ($services as $key => $room_serices) {
+					foreach ($room_serices as $key => $room_serice) {
+						foreach ($room_serice as $attribute_id => $qty) {
+							$aq[$attribute_id] = $qty;
+							$e_services[$key] = $aq;
+						}
+					}
+				}
+			}
+
+			$attr = Attribute::find(optional($apartment)->apartment_id);
+
+			if ($tracking_id) {
+				$user_tracking = UserTracking::find($tracking_id);
+				$user_tracking->action = 'completed';
+				$user_tracking->save();
+			}
+
+			foreach ($bookings as $booking) {
+
+				$reservation = new Reservation;
+				$reservation->quantity = $booking->quantity;
+				$reservation->apartment_id = $booking->apartment_id;
+				$reservation->price = $booking->price;
+				$reservation->rate = $rate;
+				$reservation->sale_price = $booking->sale_price;
+				$reservation->user_reservation_id = $user_reservation->id;
+				$reservation->property_id = $booking->property_id;
+				$reservation->checkin = $booking->checkin;
+				$reservation->checkout = $booking->checkout;
+				$reservation->length_of_stay = data_get($input, 'length_of_stay');
+				$reservation->save();
+
+				$startDate = !empty($booking->checkin) ? Carbon::parse($booking->checkin) : null;
+				$endDate = !empty($booking->checkout) ? Carbon::parse($booking->checkout) : null;
+				$apartment = Apartment::find($booking->apartment_id);
+				$checkin = $startDate ? $startDate->format('D, M d, Y') : '';
+				$checkout = $endDate ? $endDate->format('D, M d, Y') : '';
+
+				$name = 'Booking for ' . $apartment->name .
+					($checkin ? ' from ' . $checkin : '') .
+					($checkout ? ' to ' . $checkout : '') .
+					' - ' . data_get($input, 'length_of_stay') . ' night(s)';
+
+				$invoice->invoice_items()->create([
+					'name' => $name,
+					'quantity' => 1,
+					'price' => $booking->price,
+					'apartment_id' => $booking->apartment_id,
+					'total' => $booking->price,
+					'checkin' => $checkin ?? null,
+					'checkout' =>  $checkout ?? null,
+					'rate' => $rate
+				]);
+
+				if (!empty($e_services)) {
+					foreach ($e_services as $key => $attributes) {
+						foreach ($attributes as $attribute_id => $qty) {
+							$extras = new Extra;
+							if ($booking->apartment_id == $key) {
+								$attribute = ApartmentAttribute::where('attribute_id', $attribute_id)->first();
+								$extras->apartment_id = $key;
+								$extras->property_id = $request->property_id;
+								$extras->quantity = $qty;
+								$extras->user_id = optional($request->user())->id;
+								$extras->reservation_id = $reservation->id;
+								$extras->price = $attribute->converted_price;
+								$extras->guest_user_id = $guest->id;
+								$extras->attribute_id = $attribute_id;
+								$extras->save();
+							}
+						}
+					}
+				}
+
+				$booking->delete();
+			}
+
+
+
+			foreach ($property_extras as $attribute_id) {
+				$attribute = ApartmentAttribute::where('attribute_id', $attribute_id)->first();
+				$attr = AttributeProperty::where('attribute_id', $attribute_id)->first();
+				$extras = new Extra;
+				$extras->property_id = $request->property_id;
+				$extras->user_id = optional($request->user())->id;
+				$extras->guest_user_id = $guest->id;
+				$extras->attribute_id = $attribute_id;
+				$extras->user_reservation_id = $user_reservation->id;
+				$extras->price = optional($attr)->price;
+				$extras->save();
+			}
+
+			$admin_emails = explode(',', $this->settings->alert_email);
+			try {
+
+				$invoice->load('invoice_items');
+				$pdf = Pdf::loadView('admin.invoices.pdf', compact('invoice'));
+
+				if (!empty($invoice->email)) {
+					$invoice->discount = $invoice->discount_type === 'fixed'
+						? '-' . $invoice->currency . number_format($invoice->discount)
+						: '-' . number_format($invoice->discount) . '%';
+					\App\Jobs\SendInvoiceJob::dispatch($invoice);
+				}
+
+				//$when = now()->addMinutes(5); 
+				//Mail::to($guest->email)
+				//->bcc('jacob.atam@gmail.com')
+				//->bcc('info@thecentralavenue.ng')
+				//->send(new ReservationReceipt($user_reservation, $this->settings));
+
+			} catch (\Throwable $th) {
+				//dd($th);
+				Log::error("Mail error :" . $th);
+			}
+
+			//delete cart
+			if ($request->coupon) {
+				$code = trim($request->coupon);
+				$coupon =  Voucher::where('code', $request->coupon)->first();
+				if (null !== $coupon && $coupon->type == 'specific') {
+					$coupon->update(['valid' => false]);
+				}
+			}
+
+			return $request->all();
+		} catch (\Throwable $th) {
+			Log::error($th);
+		}
+	}
+
+	public function gitHub()
+	{
+		$output = shell_exec('sh /home/forge/thecentralavenue.ng/deploy.sh');
+		echo "Successfull";
+		Log::info($output);
+	}
+}

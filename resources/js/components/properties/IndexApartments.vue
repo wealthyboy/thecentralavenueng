@@ -1,0 +1,1351 @@
+<template>
+  <div class="">
+    <form
+      id="multiple-form"
+      :action="'/book/' + property.slug"
+      method="GET"
+      class="form-group"
+    >
+      <input type="hidden" name="_token" :value="$root.token" />
+      <input type="hidden" name="property_id" :value="property_id" />
+      <input type="hidden" name="apartment_id" :value="apartment_id" />
+
+      <div v-if="filter">
+        <h3 class="bold-2">Your next trip starts here</h3>
+        <div class="form-row">
+          <div
+            class="form-group form-border cursor-pointer search col-md-3 bmd-form-group mb-sm-2 mb-md-0"
+          >
+            <label class="pl-2" for="flatpickr-input-f">Check-in</label>
+            <date
+              :check_in_date="1"
+              placeholder="Check-in"
+              :isDateNeedsToToOpen="isDateNeedsToToOpen"
+              @dateSelected="checkIn"
+            />
+          </div>
+          <div
+            class="form-group ml-lg-1 form-border cursor-pointer search col-md-3 bmd-form-group mb-sm-2 mb-md-0"
+          >
+            <label class="pl-2" for="flatpickr-input-f">Check-out</label>
+            <date
+              :check_in_date="0"
+              placeholder="Check-out"
+              :isDateNeedsToToOpen="isDateNeedsToToOpen"
+              @dateSelected="checkOut"
+            />
+          </div>
+          <div
+            id="people-number"
+            class="col-md-4 cursor-pointer px-sm-0 px-md-1 mb-sm-2 mb-md-0"
+          >
+            <guests />
+          </div>
+          <div class="col-md-1 w-100 check-availablility">
+            <button
+              type="button"
+              @click.prevent="handleAvailabity()"
+              class="btn btn-primary btn-block w-auto w-xs-100 m-auto bold-2 check-availablility-button rounded"
+            >
+              Check availablity
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <template v-if="propertyLoading">
+        <div class="loader-grid mt-4">
+          <div
+            v-for="n in 9"
+            :key="n"
+            class="post-loader"
+          >
+            <!-- Image Skeleton -->
+            <div class="skeleton skeleton-image"></div>
+
+            <!-- Content -->
+            <div class="loader-content">
+              <div class="skeleton skeleton-title"></div>
+              <div class="skeleton skeleton-pill"></div>
+
+              <!-- Summary lines -->
+              <div
+                class="skeleton skeleton-line"
+                v-for="i in 5"
+                :key="i"
+              ></div>
+
+              <!-- Price -->
+              <div class="skeleton skeleton-price"></div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+
+      <div v-if="!gallery">
+        <div
+          id=""
+          v-if="!propertyLoading && !roomsAv.length"
+          class="name mt-1 rounded bg-white p-2"
+        >
+          <div class="text-muted text-danger">
+            {{
+              error_msg || "There are not available apartments for your search."
+            }}
+          </div>
+        </div>
+      </div>
+
+
+      <div
+        v-if="!propertyLoading  && showNotification"
+        id="results-available"
+        class="bold-2 mt-4 "
+        role="alert"
+      >
+        <strong></strong> We found {{ roomsAv.length }} apartment(s) available <span class="fw-bold"></span>.
+      </div>
+      <div
+        id=""
+        class="name mt-1 rounded p-2"
+      >
+        <div class="position-relative">
+          <template v-if="roomsAv.length">
+
+            <div    
+               :class="{ 'header-filter': propertyIsLoading }" class="row">
+              <apartment
+                :showReserve="apartmentIsChecked"
+                :classType="classType"
+                @showImages="showImages"
+                @showRoom="showRoom"
+                @reserve="reserve"
+                :amenities="amenities"
+                v-for="(room, index) in roomsAv"
+                :isIndex="isIndex"
+                :key="room.id"
+                :room="room"
+                :stays="stays"
+                :qty="qty"
+              />
+            </div>
+          </template>
+        </div>
+      </div>
+    </form>
+
+    
+      <transition name="modal-fade">
+  <div
+    v-if="showModal && openNotification"
+    @click.self="closeModal"
+    class="modal-overlay d-flex align-items-center justify-content-center"
+  >
+    <div class="custom-alert-modal">
+      <!-- Header -->
+      <div class="custom-alert-header">
+        <span class="alert-icon">⚠️</span>
+        <h5 class="text-white">Peak Period Notice</h5>
+        <button class="close-btn" @click="closeModal">&times;</button>
+      </div>
+
+      <!-- Body -->
+      <div class="custom-alert-body">
+        <p>{{ peakPeriodSelected }}</p>
+      </div>
+
+      <!-- Footer -->
+      <div class="custom-alert-footer">
+        <button class="ok-btn" @click="closeModal">OK</button>
+      </div>
+    </div>
+  </div>
+</transition>
+
+
+
+    <transition name="modal-fade">
+      <div
+        v-if="showModal && !openNotification"
+        @click.self="closeModal"
+        class="modal-overlay d-flex" >
+        <div class="modal d-block">
+          <div
+            class="modal-content-header d-flex align-items-center p-3 mt-4 justify-content-between"
+          >
+            <h5 class="modal-title" id="">Apartment Information</h5>
+            <a
+              @click.prevent="closeModal"
+              href="#"
+              class="modal-close d-flex justify-content-center align-items-center"
+              role="button"
+            >
+              <svg
+                class=""
+                aria-label="Close, go back to hotel details."
+                role="img"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+              >
+                <title id="undefined-close-toolbar-title">
+                  Close, go back to hotel details.
+                </title>
+                <path
+                  d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"
+                ></path>
+              </svg>
+            </a>
+          </div>
+          <div v-if="!gallery" class="modal-body quick-view">
+            <div class="row">
+              <div class="col-md-12 rounded">
+                <div class=" ">
+                  <VueSlickCarousel
+                    v-bind="settings"
+                    :arrows="true"
+                    :dots="false"
+                  >
+                    <div
+                        class="item"
+                        v-if="room.image"
+                      >
+
+                        <img
+                            :alt="room.name"
+                            :title="'book ' + room.name + '  Avenue Montaigne'"
+                            :src="room.image"
+                            class="img room-image img-fluid rounded"
+                            itemprop="contentUrl"
+                          />
+                    </div>
+                    
+                    <template v-if="room.images">
+                      <div
+                        class="item"
+                        :key="index"
+                        v-for="(image, index) in room.images"
+                      >
+
+                        <img
+                          :src="image.image"
+                          class="img room-image img-fluid rounded"
+                        />
+
+                         <div
+                              class="image-caption position-absolute"
+                              v-if="image.caption"
+                            >
+                              {{ image.caption}}
+                          </div>
+                      </div>
+                    </template>
+
+                    <div v-if="room.video" class="item">
+                       <div 
+                          v-if="!isPlaying" 
+                          class="video-preview cursor-pointer"
+                          @click="initVideo"
+                        >
+                          <img 
+                            :src="room.image_links[0].image"
+                            class="img-fluid rounded-top w-100"
+                            alt="video preview"
+                          />
+
+                          <div class="video-play-btn">
+                            ▶
+                          </div>
+                      </div>
+
+                      <video
+                        v-show="isPlaying"
+                        ref="videoPlayer"
+                        playsinline
+                        preload="metadata"
+                        controls
+                        class="w-100 rounded-top custom-video"
+                      ></video>
+                    </div>
+                  </VueSlickCarousel>
+                </div>
+                <div class="container p-0">
+                  <h4 class="primary-color">
+                    Check availablity for {{ room.name }}
+                  </h4>
+
+                  <form
+                    id="single-form"
+                    :action="'/book/' + property.slug"
+                    method="GET"
+                    class="form-group"
+                  >
+                    <input type="hidden" name="_token" :value="$root.token" />
+                    <input
+                      type="hidden"
+                      name="property_id"
+                      :value="property.id"
+                    />
+                    <input
+                      type="hidden"
+                      name="apartment_id"
+                      :value="apartment_id"
+                    />
+
+                    <div class="mr-lg-4">
+                      <div class="row quick-view p-3">
+                        <div
+                          class="form-group p-0 form-border cursor-pointer search col-md-3 bmd-form-group mb-sm-2 mb-md-0"
+                        >
+                          <label class="label" for="flatpickr-input-f"
+                            >Check-in
+                          </label>
+                          <date
+                            :check_in_date="1"
+                            placeholder="Check-in"
+                            :isDateNeedsToToOpen="isDateNeedsToToOpen"
+                            @dateSelected="checkIn"
+                          />
+                        </div>
+                        <div
+                          class="form-group p-0 ml-lg-1 form-border cursor-pointer search col-md-3 bmd-form-group mb-sm-2 mb-md-0"
+                        >
+                          <label class="label" for="flatpickr-input-f"
+                            >Check-out</label
+                          >
+                          <date
+                            :check_in_date="0"
+                            placeholder="Check-out"
+                            :isDateNeedsToToOpen="isDateNeedsToToOpen"
+                            @dateSelected="checkOut"
+                          />
+                        </div>
+                        <div
+                          id="people-number"
+                          class="guest col-md-4 cursor-pointer px-sm-0 px-md-1"
+                        >
+                          <guests />
+                        </div>
+                        <div
+                          class="col-md-1 check-availablility mt-sm-2 mt-md-0"
+                        >
+                          <button
+                            :class="{ disabled: loading }"
+                            type="button"
+                            @click.prevent="checkSingleAvailabity(room)"
+                            class="btn w-auto w-xs-100 btn-primary btn-block m-auto bold-2 check-availablility-button rounded"
+                          >
+                            <span
+                              v-if="loading"
+                              class="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"
+                            ></span>
+                            Check availablity
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="mt-3">
+                      <div
+                        v-if="
+                          singleApartmentIsAvailable && singleApartmentIsChecked
+                        "
+                      >
+                        <div class="alert alert-success">
+                          This apartment is available
+                        </div>
+                        <button
+                          v-if="
+                            singleApartmentIsAvailable &&
+                            singleApartmentIsChecked
+                          "
+                          type="button"
+                          @click.prevent="reserveSingle(room)"
+                          class="btn btn-primary m-auto bold-2 rounded"
+                        >
+                          Click here to book
+                        </button>
+                      </div>
+
+                      <div
+                        v-if="
+                          !singleApartmentIsAvailable &&
+                          singleApartmentIsChecked
+                        "
+                        class="text-danger"
+                      >
+                        This apartment is not available on your selected date
+                      </div>
+                    </div>
+                  </form>
+                </div>
+
+                <div class="card-title bold-2 text-size-1-big mt-lg-0 mt-sm-3">
+                  {{ room.name }}
+                </div>
+                <div class="mb-5 bg-grey p-3 rounded">
+                  <div class="d-flex">
+                    <svg
+                      class=""
+                      aria-describedby="cleanliness-description"
+                      role="img"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                      xmlns:xlink="http://www.w3.org/1999/xlink"
+                    >
+                      <desc id="cleanliness-description">cleanliness</desc>
+                      <path
+                        d="M19.14 7.25 18 10l-1.14-2.86L14 6l2.86-1.14L18 2l1.14 2.86L22 6l-2.86 1.25zM11 10 9 4l-2 6-6 2 6 2 2 6 2-6 6-2-6-2zm4.5 10.5-1.5-1 1.5-1 1-1.5 1 1.5 1.5 1-1.5 1-1 1.5-1-1.5z"
+                      ></path>
+                    </svg>
+                    <h3 class="">Highlights</h3>
+                  </div>
+                  <div class="">
+                    <span
+                      v-for="(h, index) in highlights"
+                      :key="index"
+                      class="ml-2"
+                    >
+                      {{ h }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="d-flex flex-column">
+                  <div class="position-relative mb-2">
+                    <span class="position-absolute svg-icon-section">
+                      <svg>
+                        <use xlink:href="#bedrooms-icon"></use>
+                      </svg>
+                    </span>
+                    <span class="svg-icon-text"
+                      >{{ room.no_of_rooms }} Bedrooms</span
+                    >
+                  </div>
+                  <div class="position-relative mb-2">
+                    <span class="position-absolute svg-icon-section">
+                      <svg>
+                        <use xlink:href="#bathroom-icon"></use>
+                      </svg>
+                    </span>
+                    <span class="svg-icon-text"
+                      >{{ room.toilets }} bathrooms</span
+                    >
+                  </div>
+                  <div class="position-relative mb-2">
+                    <span class="position-absolute svg-icon-section">
+                      <svg>
+                        <use xlink:href="#sleeps-icon"></use>
+                      </svg>
+                    </span>
+                    <span class="svg-icon-text"
+                      >{{ room.max_adults }} Guests</span
+                    >
+                  </div>
+
+                  <div class="position-relative mb-1">
+                    <span class="position-absolute svg-icon-section">
+                      <svg>
+                        <use xlink:href="#location_city"></use>
+                      </svg>
+                    </span>
+                    <span class="svg-icon-text">{{ room.floor }} </span>
+                  </div>
+                </div>
+
+                <div class="uitk-spacing uitk-spacing-margin-blockend-six">
+                  <h3
+                    class="uitk-heading uitk-heading-5 uitk-spacing uitk-spacing-margin-blockend-six"
+                  >
+                    Apartment amenities
+                  </h3>
+                  <div class="row" id="apartment-fac" style="">
+                    <div
+                      v-for="(objects, parentName) in apartment_facilities"
+                      :key="parentName"
+                      class="col-md-6 margin-bottom-13rem"
+                    >
+                      <div class="d-flex align-items-center">
+                        <svg
+                          class="uitk-icon uitk-layout-flex-item"
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                          xmlns:xlink="http://www.w3.org/1999/xlink"
+                        >
+                          <path
+                            d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
+                          ></path>
+                        </svg>
+
+                        <h4 class="ml-2">{{ parentName }}</h4>
+                      </div>
+                      <div class="">
+                        <div class="">
+                          <ul class="" role="list">
+                            <li
+                              class=""
+                              v-for="obj in objects"
+                              :key="obj.id"
+                              role="listitem"
+                            >
+                              <span aria-hidden="true" class=""></span
+                              ><span class=""> {{ obj.name }} </span>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </div>
+</template>
+<script>
+import Guests from "../properties/Guests.vue";
+import Apartment from "./Apartment.vue";
+import Date from "./Date.vue";
+import Pickr from "vue-flatpickr-component";
+import VueSlickCarousel from "vue-slick-carousel";
+import "vue-slick-carousel/dist/vue-slick-carousel.css";
+import booking from "../../mixins/booking";
+import Hls from "hls.js";
+
+
+import axios from "axios";
+
+export default {
+  mixins: [booking],
+  props: {
+    apartments: Array,
+    property: Object,
+    propertys_not_available: Array,
+    nights: Array,
+    amenities: Array,
+    isAgent: Boolean,
+    filter: {
+      type: Number,
+      default: 1,
+    },
+    showResult: Array,
+    showReserve: Number,
+    gallery: Number,
+    apr: null,
+    peak_period: {
+      type: Object,
+      default: {},
+    },
+    isIndex: Boolean
+
+  },
+  data() {
+    return {
+      settings: {
+        arrows: true,
+        fade: true,
+        swipe: true,
+        touchMove: true,
+      },
+      roomsAv: [],
+      total: 0,
+      isPlaying: false,
+      src: "",
+      aps: 0,
+      apTotal: 0,
+      attrPrice: 0,
+      apartment_id: null,
+      property_id: null,
+
+      openNotification: null,
+      guests: 0,
+      amount: 0,
+      apQ: [],
+      qty: false,
+      stays: null,
+      loading: false,
+      highlights: [],
+      propertyLoading: false, 
+      showApartmentCount: null,
+      peakPeriodSelected: null,
+      propertyIsLoading: false,
+      isDateNeedsToToOpen: false,
+      showNotification: null,
+      singleApartmentIsChecked: false,
+      singleApartmentIsAvailable: false,
+      apartment_facilities: null,
+      error_msg: null,
+      showModal: false,
+      apartmentIsAvailable: false,
+      apartmentIsChecked: false,
+      loading: false,
+      classType: ["col-lg-3 col-md-4 col-12"],
+      message: "LKNL",
+      title: "LM;;",
+      showImageModal: false,
+      room: {},
+      form: {
+        room_quantity: [],
+        selectedRooms: [],
+        children: 1,
+        adults: 1,
+        rooms: 1,
+        check_in_checkout: null,
+        checkin: null,
+        checkout: null,
+        property_id: this.property.id,
+      },
+    };
+  },
+  created() {
+    //this.stays = this.nights;
+    //this.roomsAv = this.apartments;
+  },
+  mounted() {
+    let lo = document.getElementById("full-bg");
+
+    const video = this.$refs.videoPlayer;
+
+
+
+    if (lo) {
+      document.getElementById("full-bg").remove();
+    }
+
+    this.showApartmentCount = this.apr;
+
+    const retrievedJsonString = localStorage.getItem("searchParams");
+    console.log(retrievedJsonString);
+    // Check if the retrieved JSON string is not null
+    if (retrievedJsonString !== null) {
+      const retrievedObject = JSON.parse(retrievedJsonString);
+
+      if (retrievedObject.checkin !== null) {
+        this.form.checkin = retrievedObject.checkin;
+        this.form.checkout = retrievedObject.checkout;
+
+
+      } else {
+        const urlParams = new URLSearchParams(window.location.search);
+        console.log(urlParams);
+
+        const checkin = urlParams.get("checkin") || "";
+        const checkout = urlParams.get("checkout") || "";
+        this.form.checkin = checkin;
+        this.form.checkout = checkout;
+      }
+
+      // const urlParams = new URLSearchParams(window.location.search);
+      // const checkin = urlParams.get('checkin') || '';
+      // const checkout = urlParams.get('checkout') || '';
+      // this.form.checkin = checkin;
+      // this.form.checkout = checkout;
+
+      // const fallbackParams = JSON.stringify({ checkin, checkout });
+      // localStorage.setItem('searchParams', fallbackParams);
+      //this.checkAvailabity()
+    } else {
+    }
+
+
+    if (video) {
+      video.addEventListener("pause", () => this.handleVideoStop());
+       video.addEventListener("ended", () => this.handleVideoStop());
+    }
+   
+
+
+    $(".owl-carousel").on("changed.owl.carousel", () => {
+      if (this.$refs.videoPlayer) {
+        this.$refs.videoPlayer.pause();
+        this.isPlaying =false
+      }
+    });
+
+
+    jQuery(function () {
+      $(".owl-carousel").owlCarousel({
+        margin: 0,
+        dots: false,
+        nav: true,
+        loop: true,
+        navText: [
+          '<div class="nav-btn prev-slide d-flex justify-content-center align-items-center mr-1"><svg class="uitk-icon uitk-icon-leading uitk-icon-directional" aria-label="Show previous image" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>Show previous image</title><path d="M14.862 16.448 10.414 12l4.446-4.447a.5.5 0 0 0-.007-.7l-.707-.707a.5.5 0 0 0-.707 0l-5.146 5.147a1 1 0 0 0 0 1.414l5.146 5.146a.5.5 0 0 0 .707 0l.707-.707a.5.5 0 0 0 .009-.698z"></path></svg></div>',
+          '<div class="nav-btn next-slide d-flex justify-content-center align-items-center ml-1"><svg class="uitk-icon uitk-icon-leading uitk-icon-directional" aria-label="Show next image" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>Show next image</title><path d="M10.56 6.146a.5.5 0 0 0-.706 0l-.708.708a.5.5 0 0 0 0 .707L13.586 12l-4.44 4.44a.5.5 0 0 0 0 .706l.708.708a.5.5 0 0 0 .707 0l5.146-5.147a1 1 0 0 0 0-1.414l-5.146-5.147z"></path></svg></div>',
+        ],
+
+        responsive: {
+          0: {
+            items: 1,
+          },
+          850: {
+            items: 1,
+          },
+          1000: {
+            items: 1,
+          },
+        },
+      });
+    });
+
+    const parentElement = document.getElementById("sm-main-banner");
+
+    if (parentElement) {
+      const hiddenDivs = parentElement.querySelectorAll(".d-none");
+      hiddenDivs.forEach((div) => {
+        div.classList.remove("d-none");
+      });
+    }
+
+    console.log(this.room)
+
+
+    if (!this.filter) {
+      this.classType = ["col-12 col-lg-3 col-md-6"];
+      this.roomsAv = this.apartments;
+    } else {
+      this.classType = ["col-12 col-lg-4 col-md-6"];
+      this.getApartments();
+    }
+
+
+    console.log(this.form.checkin);
+  },
+  components: {
+    Pickr,
+    Guests,
+    Apartment,
+    Date,
+    VueSlickCarousel,
+  },
+
+  methods: {
+      handleVideoStop() {
+        this.isPlaying = false;
+        
+      },
+    showImages(room) {
+      this.showImageModal = !this.showImageModal;
+      this.room = room;
+    },
+    parseStringToArray(str) {
+      if (str) {
+        const array = str.split(",");
+        return array;
+      }
+      return null;
+    },
+    
+    showRoom(room) {
+      this.showModal = !this.showModal;
+      this.room = room;
+      this.groupData(room);
+      this.openNotification = null
+
+      this.highlights = this.parseStringToArray(room.teaser);
+      if (  this.form.checkin  &&  this.form.checkout ) {
+        this.checkApartmentAvailabity(room)
+
+      }
+
+      jQuery(function () {
+        // Add touch event listeners to centered images
+        $(".custom-iframe").on("touchstart", function (event) {
+          // Record the initial touch position
+          var startX = event.touches[0].clientX;
+
+          // Add touch move event listener
+          $(this).on("touchmove", function (event) {
+            // Calculate the distance moved
+            var moveX = event.touches[0].clientX - startX;
+
+            // If the distance moved is greater than a threshold, trigger carousel swipe
+            if (Math.abs(moveX) > 50) {
+              // Adjust threshold as needed
+              if (moveX > 0) {
+                // Swipe right
+                $(".owl-carousel").trigger("prev.owl.carousel");
+              } else {
+                // Swipe left
+                $(".owl-carousel").trigger("next.owl.carousel");
+              }
+
+              // Remove touchmove event listener to prevent multiple triggers
+              $(this).off("touchmove");
+            }
+          });
+
+          // Add touchend event listener to clean up
+          $(this).on("touchend", function () {
+            // Remove touchmove event listener
+            $(this).off("touchmove");
+          });
+        });
+        console.log(true);
+
+        $(".owl-carousel").owlCarousel({
+          margin: 0,
+          nav: true,
+          dots: false,
+          navText: [
+            '<div class="nav-btn prev-slide d-flex z-index justify-content-center align-items-center mr-1"><svg  viewBox="0 0 21 40" xmlns="http://www.w3.org/2000/svg"><path d="M19.9 40L1.3 20 19.9 0"  fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>',
+            '<div class="nav-btn next-slide d-flex z-index justify-content-center align-items-center ml-1"><svg  viewBox="0 0 19 40" xmlns="http://www.w3.org/2000/svg"><path d="M.1 0l18.6 20L.1 40"  fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>',
+          ],
+          responsive: {
+            0: {
+              items: 1,
+            },
+            600: {
+              items: 1,
+            },
+            1000: {
+              items: 1,
+            },
+          },
+        });
+      });
+    },
+
+    initVideo() {
+      this.isPlaying = true;
+
+      const video = this.$refs.videoPlayer;
+
+      this.src = "" + this.room.video.encoded_path;
+      const dots = document.querySelector(".aprts .owl-dots");
+
+      console.log(dots)
+      if (dots) {
+        dots.classList.add("video-is-playing");
+      }
+      
+
+      if (Hls.isSupported()) {
+
+        const hls = new Hls({
+          capLevelToPlayerSize: true,
+          autoStartLoad: true,
+        });
+
+        hls.loadSource(this.src);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play();
+        });
+
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = this.src;
+        video.addEventListener("loadedmetadata", () => {
+          video.play();
+        });
+      }
+    },
+
+
+    openModal() {
+      this.showModal = true;
+      document.body.style.overflow = "hidden";
+      document.body.addEventListener("click", this.clickOutsideHandler);
+    },
+    closeModal() {
+      this.showModal = false;
+      // Remove event listener when closing modal
+      document.body.style.overflow = ""; // Prevent scrolling on the body
+
+      document.body.removeEventListener("click", this.clickOutsideHandler);
+    },
+
+    openImageModal() {
+      this.showImageModal = true;
+      document.body.style.overflow = "hidden"; // Prevent scrolling on the body
+      // Add event listener to close modal when clicking outside
+      document.body.addEventListener("click", this.clickOutsideHandler);
+    },
+    closeImageModal() {
+      this.showImageModal = false;
+      // Remove event listener when closing modal
+      document.body.style.overflow = ""; // Prevent scrolling on the body
+
+      document.body.removeEventListener("click", this.clickOutsideHandler);
+    },
+
+    clickOutsideHandler(event) {
+      // Check if the click target is outside of the modal
+      if (!this.$refs.modal.contains(event.target)) {
+        this.closeModal();
+      }
+
+      document.body.style.overflow = ""; // Prevent scrolling on the body
+    },
+    dateSelected(value) {
+      this.form.check_in_checkout = value;
+    },
+    parseDateRange(dateRangeString) {
+      // Split the date range string into two dates
+      const [startDateString, endDateString] = dateRangeString.split(" to ");
+
+      // Parse the start date and end date
+      const startDate = new Date(startDateString);
+      const endDate = new Date(endDateString);
+
+      // Return an object containing both start and end dates
+      return { startDate, endDate };
+    },
+
+    groupData(room) {
+      this.apartment_facilities = room.apartment_facilities.reduce(
+        (acc, obj) => {
+          const parentName = obj.parent.name;
+          if (!acc[parentName]) {
+            acc[parentName] = [];
+          }
+          acc[parentName].push(obj);
+          return acc;
+        },
+        {}
+      );
+
+      console.log(room.apartment_facilities);
+    },
+
+    checkSingleAvailabity(room) {
+
+      this.checkApartmentAvailabity(room);
+    },
+    buildQuery(obj) {
+      const params = new URLSearchParams();
+      Object.keys(obj).forEach((key) => {
+        const value = obj[key];
+
+        if (value !== null && value !== undefined && value !== "") {
+          params.append(key, value);
+        }
+      });
+      return params.toString();
+    },
+
+
+    getApartments() {
+      this.propertyLoading = true;
+
+
+      // restore from localStorage
+      const retrieved = localStorage.getItem("searchParams");
+      if (retrieved) {
+        try {
+          const saved = JSON.parse(retrieved);
+
+          if (saved.rooms) this.form.rooms = saved.rooms;
+          if (saved.persons) this.form.persons = saved.persons;
+          if (saved.checkin) this.form.checkin = saved.checkin;
+          if (saved.checkout) this.form.checkout = saved.checkout;
+          if (saved.check_in_checkout)
+            this.form.check_in_checkout = saved.check_in_checkout;
+
+        } catch (e) {
+          console.error("Invalid stored JSON", e);
+        }
+      }
+
+      // build query from NON-EMPTY values
+      const query = this.buildQuery({
+        rooms: this.form.rooms,
+        persons: this.form.persons,
+        checkin: this.form.checkin,
+        checkout: this.form.checkout,
+        check_in_checkout: this.form.check_in_checkout,
+      });
+
+      const hasValidDateRange = query.includes("check_in_checkout=");
+      // 3. SEND TO API
+      axios
+        .get(window.location.pathname + "?" + query + "&t=" + Math.random())
+        .then((response) => {
+
+          let params = response.data.params;
+
+          this.showApartmentCount = hasValidDateRange;
+
+          const peakPeriod = response.data.peak_periods;
+
+          if (peakPeriod) {
+            this.peakPeriodSelected = `Your selected dates fall within the peak period (${peakPeriod.from_date} to ${peakPeriod.to_date}).`;
+            this.openNotification = true;
+            this.openModal();
+          }
+
+          this.form.rooms = params.rooms;
+          this.form.persons = params.persons;
+          this.roomsAv = response.data.data;
+          this.stays = response.data.nights;
+
+          if (this.form.checkin && this.form.checkout &&
+              this.isValidDate(this.form.checkin) &&
+              this.isValidDate(this.form.checkout)) {
+              this.showNotification = true;
+
+            this.apartmentIsChecked = true;
+          }
+
+          this.propertyLoading = false;
+
+          jQuery(function () {
+            $(".owl-carousel").owlCarousel({
+              margin: 10,
+              nav: true,
+              dots: false,
+              responsive: {
+                0: { items: 1 },
+                600: { items: 1 },
+                1000: { items: 1 },
+              },
+            });
+          });
+
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+
+    checkIn(value) {
+      this.form.checkin = value;
+    },
+    checkOut(value) {
+      this.form.checkout = value;
+    },
+
+    check(e) {
+      let extra_services = document.querySelectorAll(
+        '[name="extra_services[]"]'
+      );
+      let attr = [];
+      extra_services.forEach((e, i) => {
+        if (e.checked) {
+          attr.push(e.dataset.price);
+        }
+      });
+
+      this.attrPrice = this.sum(attr);
+    },
+    sum(arr) {
+      return arr.reduce((a, b) => parseInt(a) + parseInt(b), 0);
+    },
+    handleAvailabity() {
+      this.checkAvailabity();
+    },
+  },
+};
+
+class IntersectionObserverHandler {
+  constructor(options) {
+    this.observer = new IntersectionObserver(
+      this.handleIntersection.bind(this),
+      options
+    );
+    this.dynamicClassesMap = new Map();
+  }
+
+  handleIntersection(entries, observer) {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        const dynamicClasses = this.dynamicClassesMap.get(entry.target);
+        if (dynamicClasses) {
+          entry.target.classList.remove("opacity-0");
+          dynamicClasses.forEach((className) =>
+            entry.target.classList.add(className)
+          );
+          observer.unobserve(entry.target);
+        }
+      }
+    });
+  }
+
+  observe(targets) {
+    targets.forEach((target) => {
+      const { element, dynamicClasses } = target;
+      // Check if the element exists in the DOM before observing
+      if (element && document.body.contains(element)) {
+        this.observer.observe(element);
+        this.dynamicClassesMap.set(element, dynamicClasses);
+      }
+    });
+  }
+
+  unobserve(targets) {
+    targets.forEach((target) => {
+      this.observer.unobserve(target.element);
+      this.dynamicClassesMap.delete(target.element);
+    });
+  }
+}
+</script>
+
+<style scoped>
+/* Adjust modal styles for full width and height */
+.fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.bg-opacity-75 {
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+/* Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6); /* darker overlay */
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modal Container */
+.custom-alert-modal {
+  background: #4b2e2e; /* coffee brown */
+  border-radius: 12px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  color: #f5f5f5; /* light text */
+  animation: slideDown 0.3s ease;
+}
+
+/* Header */
+.custom-alert-header {
+  display: flex;
+  align-items: center;
+  background: #3b2424; /* darker coffee for header */
+  color: #f8e6d8; /* creamy text */
+  padding: 15px 20px;
+  font-weight: bold;
+  position: relative;
+}
+
+.alert-icon {
+  margin-right: 10px;
+  font-size: 1.4rem;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  cursor: pointer;
+  color: #f8e6d8;
+}
+
+/* Body */
+.custom-alert-body {
+  padding: 20px;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #f5f5f5; /* keep text readable */
+}
+
+/* Footer */
+.custom-alert-footer {
+  text-align: center;
+  padding: 15px;
+  background: #3b2424; /* match header */
+}
+
+.ok-btn {
+  background: #f5f5f5;
+  color: #3b2424;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s, color 0.3s;
+}
+
+.ok-btn:hover {
+  background: #d2b48c; /* lighter coffee */
+  color: #fff;
+}
+
+/* Slide animation */
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+
+.video-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.video-preview {
+  position: relative;
+}
+
+.video-play-btn {
+  position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.55);
+    color: white;
+    font-size: 21px;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    align-content: center;
+    align-self: center;
+}
+
+@media (min-width: 1024px) { /* desktop screens */
+    .custom-video {
+        height: 603px !important;
+        object-fit: cover;
+
+    }
+}
+
+
+
+
+/* ================================
+   POST SKELETON LOADER
+================================ */
+
+.loader-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+  .loader-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+  .loader-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.post-loader {
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* Base skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 25%,
+    #e5e7eb 37%,
+    #f1f5f9 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+
+/* Image */
+.skeleton-image {
+  width: 100%;
+  height: 260px;
+  border-radius: 0;
+}
+
+/* Content wrapper */
+.loader-content {
+  padding: 20px;
+}
+
+/* Title */
+.skeleton-title {
+  height: 28px;
+  width: 40%;
+  margin-bottom: 16px;
+}
+
+/* Highlights pill */
+.skeleton-pill {
+  height: 44px;
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+/* Summary lines */
+.skeleton-line {
+  height: 16px;
+  width: 70%;
+  margin-bottom: 12px;
+}
+
+.skeleton-line:nth-child(odd) {
+  width: 55%;
+}
+
+/* Price */
+.skeleton-price {
+  height: 34px;
+  width: 30%;
+  margin-top: 24px;
+}
+
+/* Animation */
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+</style>
