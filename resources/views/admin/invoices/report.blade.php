@@ -173,7 +173,7 @@
 
     <!-- FOOTER -->
     <div class="footer">
-        <strong>&copy; {{ date('Y') }} Avenue Montaigne Limited. All Rights Reserved.</strong>
+        <strong>&copy; {{ date('Y') }} The Central Avenue Limited. All Rights Reserved.</strong>
     </div>
 
 </body>
