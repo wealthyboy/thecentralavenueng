@@ -7,7 +7,7 @@
       <p class="large text-black">
         Thank you for choosing Central Avenue.
 
-Your reservation has been successfully received and confirmed. An invoice has been sent to your email with full details of your booking.
+        Your reservation has been successfully received and confirmed. An invoice has been sent to your email with full details of your booking.
       </p>
 
 

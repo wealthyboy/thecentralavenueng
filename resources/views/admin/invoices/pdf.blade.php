@@ -166,7 +166,7 @@
                 $price = floatval($item->price);
                 $total = $qty * $price;
                 $subTotal += $total;
-                $checkin = $item->checkin ? \ Carbon\Carbon::parse($item->checkin)->format('D, M d, Y') : '';
+                $checkin = $item->checkin ? \Carbon\Carbon::parse($item->checkin)->format('D, M d, Y') : '';
                 $checkout = $item->checkout ? \Carbon\Carbon::parse($item->checkout)->format('D, M d, Y') : '';
                 $nights = $qty > 0 ? "{$qty} night" . ($qty > 1 ? 's' : '') : '';
                 @endphp
