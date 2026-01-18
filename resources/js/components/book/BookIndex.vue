@@ -529,6 +529,7 @@ export default {
       }
     },
 
+
     applyCoupon: function () {
       if (!this.coupon) {
         this.coupon_error = "Enter a coupon code";
