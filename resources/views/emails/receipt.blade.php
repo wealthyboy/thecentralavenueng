@@ -9,7 +9,7 @@
 <body style="font-family: Arial, sans-serif; color:#333;">
     <h3>Dear {{ $invoice->full_name }},</h3>
     <p>
-        Thank you for choosing Avenue montaigne for your stay. Please find attached your receipt:</p>
+        Thank you for choosing The Central Avenue for your stay. Please find attached your receipt:</p>
 
     <b>Note: You’re required to present a valid ID upon arrival to check-in. You can also self check-in by clicking the link below to upload your ID
         <br />
@@ -20,7 +20,7 @@
 
     <p>If you have any questions, feel free to reach out to <a href="mailto:info@thecentralavenue.ng">info@thecentralavenue.ng</a>.</p>
 
-    <p>Warm regards,<br><strong>Avenue Montaigne Limited</strong></p>
+    <p>Warm regards,<br><strong>The Central Avenue Limited</strong></p>
 </body>
 
 </html>
