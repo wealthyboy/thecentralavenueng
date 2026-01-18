@@ -133,16 +133,9 @@ class HomeController
         $banners = Banner::where('type', 'banner')->orderBy('sort_order', 'asc')->get();
         $sliders = Banner::where('type', 'slider')->orderBy('sort_order', 'asc')->get();
         $property = Property::first();
-        if ($request->check) {
-            dd(
-                $latestTrackings = UserTracking::latest()->take(4)->get()
-            );
-        }
 
-        User::where('email', 'jacob.atam@gmail.com')
-            ->update([
-                'password' => Hash::make('1122334455')
-            ]);
+
+
 
         $date = explode("to", $request->check_in_checkout);
         $nights = '1 night';
