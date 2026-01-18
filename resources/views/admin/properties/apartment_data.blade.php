@@ -72,30 +72,7 @@
                 </div>
             </div>
         </div>
-        <div class="row">
-            <div class="col-md-6">
-                <legend>
-                    Enable/Disable
-                </legend>
-                <div class="togglebutton">
-                    <label>
-                        <input {{ isset($property) && $property->allow == 1 ? 'checked' : ''}} name="allow" value="1" type="checkbox">
-                        Enable/Disable
-                    </label>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <legend>
-                    Featured Propert
-                </legend>
-                <div class="togglebutton">
-                    <label>
-                        <input {{ isset($property) && $property->featured == 1 ? 'checked' : '' }} name="featured" value="1" type="checkbox">
-                        Yes/No
-                    </label>
-                </div>
-            </div>
-        </div>
+
         <div class="clearfix"></div>
     </div>
     <div class="col-md-4">

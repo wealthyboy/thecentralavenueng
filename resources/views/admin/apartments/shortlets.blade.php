@@ -50,22 +50,12 @@
                      </div>
                   </div>
 
-                  <div class="col-md-2">
-                     <div class="form-group">
-                        <select name="apartment_id" id="" required="true" class="form-control">
-                           <option value="">Apartment</option>
-                           @foreach($room_ids as $key => $room_id)
-                           <option value="{{ $room_id->id }}">{{ $room_id->name }}</option>
-                           @endforeach
 
-                        </select>
-                     </div>
-                  </div>
 
 
                   <div class="col-md-2">
                      <div class="form-group">
-                        <select name="floor" id="" required="true" class="form-control">
+                        <select name="floor" id="" class="form-control">
                            <option value="">Floor</option>
                            @if(isset($floors))
                            @foreach($floors as $key => $floor)
@@ -95,7 +85,7 @@
                      <div class="form-group">
                         <select name="room_quantity" name="quantity" id="" required="true" class="form-control">
                            <option value="" selected>Select Quantity</option>
-                           @for ($i = 1; $i< 10; $i++) <option value="{{ $i }}"> {{ $i }}</option>
+                           @for ($i = 1; $i< 2; $i++) <option value="{{ $i }}"> {{ $i }}</option>
                               @endfor
                         </select>
                      </div>

@@ -139,10 +139,10 @@
             </svg> {{ room.guests }}
         </span>
         <span class="mr-3">
-            <svg class="icon mr-1" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M9.35 3.9C6.9 3.9 5 5.9 5 8.36V22H3V8.36A6.36 6.36 0 019.35 2c3.5 0 6.15 2.85 6.15 6.36V9.8h2c1.13 0 2.14.66 2.6 1.69l.9 1.99H8.1l.9-2a2.85 2.85 0 012.6-1.68h2V8.36c0-2.46-1.79-4.46-4.25-4.46z" clip-rule="evenodd"></path> <path d="M12.5 16.5a1 1 0 11-2 0 1 1 0 012 0zm6 0a1 1 0 11-2 0 1 1 0 012 0zm-8.5 4a1 1 0 11-2 0 1 1 0 012 0zm5.5 0a1 1 0 11-2 0 1 1 0 012 0zm5.5 0a1 1 0 11-2 0 1 1 0 012 0z"></path></svg> {{ room.bath }} 3
+            <svg class="icon mr-1" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M9.35 3.9C6.9 3.9 5 5.9 5 8.36V22H3V8.36A6.36 6.36 0 019.35 2c3.5 0 6.15 2.85 6.15 6.36V9.8h2c1.13 0 2.14.66 2.6 1.69l.9 1.99H8.1l.9-2a2.85 2.85 0 012.6-1.68h2V8.36c0-2.46-1.79-4.46-4.25-4.46z" clip-rule="evenodd"></path> <path d="M12.5 16.5a1 1 0 11-2 0 1 1 0 012 0zm6 0a1 1 0 11-2 0 1 1 0 012 0zm-8.5 4a1 1 0 11-2 0 1 1 0 012 0zm5.5 0a1 1 0 11-2 0 1 1 0 012 0zm5.5 0a1 1 0 11-2 0 1 1 0 012 0z"></path></svg> {{ room.room_toilets }} 
         </span>
         <span>
-              <svg class="icon mr-1" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path data-v-38cd3ee8="" fill-rule="evenodd" d="M11 7h8a4 4 0 014 4v9h-2v-3H3v3H1V5h2v9h8V7zm-1 3a3 3 0 11-6 0 3 3 0 016 0z" clip-rule="evenodd"></path></svg>{{ room.bed }} 3
+              <svg class="icon mr-1" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path data-v-38cd3ee8="" fill-rule="evenodd" d="M11 7h8a4 4 0 014 4v9h-2v-3H3v3H1V5h2v9h8V7zm-1 3a3 3 0 11-6 0 3 3 0 016 0z" clip-rule="evenodd"></path></svg>{{ room.room_number }} 
         </span>
       </div>
 
