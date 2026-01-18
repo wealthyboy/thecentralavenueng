@@ -222,9 +222,9 @@
                 <td width="55%" valign="top">
                     <strong>Payment Details</strong><br>
                     {!! nl2br(e($invoice->payment_info ?? "Please make payment using the following details:
-                    Avenue Montaigne Limited
+                    The Central Avenue Limited
                     Providus Bank
-                    1305006894")) !!}
+                    1306382489")) !!}
                 </td>
                 <td width="45%" valign="top" align="right">
                     <table class="summary-table" align="right" style="width:100%;">
@@ -268,7 +268,7 @@
 
     <!-- FOOTER -->
     <div class="footer">
-        <strong>&copy; {{ date('Y') }} Avenue Montaigne Limited. All Rights Reserved.</strong>
+        <strong>&copy; {{ date('Y') }} The Central Avenue . All Rights Reserved.</strong>
     </div>
 </body>
 

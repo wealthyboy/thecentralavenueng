@@ -139,10 +139,10 @@
                     {{ $invoice->phone }}
                 </td>
                 <td width="50%" align="right">
-                    <strong>Avenue Montaigne Limited</strong><br>
-                    37 Cooper Road, Ikoyi, Lagos<br>
+                    <strong>The Central Avenue</strong><br>
+                    34 Cooper Road, Ikoyi, Lagos<br>
                     info@thecentralavenue.ng<br>
-                    +234 701 897 1322
+                    +234 803 798 9901
                 </td>
             </tr>
         </table>
