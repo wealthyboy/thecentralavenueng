@@ -26,7 +26,7 @@
                      <img height="60" width="60" src="/images/logo/Central_Avenue_Main_Logo_1_-_Copy-removebg-preview.png" alt="" srcset="">
                   </a>
                </div>
-               <small class="d-flex justify-content-center text-white">Best apartments</small>
+               <small class="d-flex justify-content-center text-white">Premium apartments</small>
 
             </div>
 
