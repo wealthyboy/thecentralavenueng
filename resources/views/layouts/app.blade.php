@@ -32,10 +32,9 @@
 
 
             <ul class="d-flex justify-content-center list-unstyled text-white">
-               <li class="nav-item"><a class="nav-link bold-2 text-white" href="#">APARTMENTS</a></li>
-               <li class="nav-item"><a class="nav-link bold-2 text-white" href="#">ABOUT US</a></li>
-               <li class="nav-item"><a class="nav-link  bold-2 text-white" href="#">CONTANT US</a></li>
-               <li class="nav-item"><a class="nav-link  bold-2 text-white" href="#">GALLERY</a></li>
+               <li class="nav-item"><a class="nav-link bold-2 text-white" href="/apartments">APARTMENTS</a></li>
+               <li class="nav-item"><a class="nav-link bold-2 text-white" href="/pages/about-us">ABOUT US</a></li>
+               <li class="nav-item"><a class="nav-link  bold-2 text-white" href="/pages/contact-us">CONTANT US</a></li>
             </ul>
          </div>
          @include('_partials.header', ['show_logo' => true, 'show_book' => true])
