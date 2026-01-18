@@ -13,7 +13,7 @@
             font-family: DejaVu Sans, sans-serif;
             font-size: 13px;
             color: #333;
-            background-color: rgb(248, 245, 244);
+            background-color: #fff;
             position: relative;
         }
 
@@ -34,7 +34,7 @@
         }
 
         .logo-block {
-            background-color: #342c27;
+            background-color: #000;
             width: 95px;
             height: 67px;
         }
