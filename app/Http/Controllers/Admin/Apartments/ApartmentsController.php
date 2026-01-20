@@ -213,6 +213,20 @@ class ApartmentsController extends Controller
             }
         }
 
+        if ($request->hasFile('video')) {
+            // create or fetch the video model for this apartment
+            $video = $apartment->video()->firstOrCreate([]);
+
+
+            // send to service for upload + encoding
+            VideoUploader::uploadAndEncode(
+                $request->file('video'),
+                $video,
+                'spaces',
+                'videos'
+            );
+        }
+
         /**
          * Rooms with have includes
          */
@@ -421,6 +435,19 @@ class ApartmentsController extends Controller
             }
             $apartment->attributes()->syncWithoutDetaching($beds);
         }
+
+        if ($request->hasFile('video')) {
+            // create or fetch the video model for this apartment
+            $video = $apartment->video()->firstOrCreate([]);
+
+
+            // send to service for upload + encoding
+            VideoUploader::uploadAndEncode(
+                $request->file('video'),
+                $video,
+                'spaces',
+                'videos'
+          
 
 
 
